@@ -1,0 +1,112 @@
+USAGE
+
+BUILDING
+
+Some notes about building:
+
+	Building *will* take a while, the first time, as it pulls the  Git repo.
+	Subsequent builds are fast as fast can be ish!
+	
+	You can specify the Git repo to pull from by editing the build/src.xml file.
+	
+	As the Railo repo is imported into the ./src directory, any git operations
+	for the sources should be done there.
+
+	Different versions of Railo require different Java versions to compile. If 
+	you try to build with the wrong version of Java, the build will fail and 
+	tell you what the correct version to use is.  If you are on linux/OS X, 
+	you can pass in the location of JAVA_HOME via build.java.home
+	
+	ex: ./railobuild build branch=3.2.1.006 build.java.home=/path/to/java_home
+	
+	Using the "build" or "commit" build options will do a *forced* checkout of
+	the corresponding sources.  If you have any changes, you sure as hell have
+	better committed them before running these "distructive" builds.
+	
+	Running a plain "build", without the branch or commit options, will only run
+	the build on the current sources.
+	
+	The sources are compiled with the Eclipse ECJ compiler, so no JDK is needed.
+
+Build the default (3.3) branch
+
+ ./railobuild build 
+
+Build the "develop" branch
+
+ ./railobuild build branch=develop
+ 
+Build a tag (uses the branch argument but specify the tag)
+
+ ./railobuild build branch=3.3.1.006
+ 
+Build a random commit 
+ 
+ ./railobuild build commit=81a8897d1b9e273f8de819eb56a13d7bcf5d51cf
+
+
+TESTING
+
+Some notes on testing:
+
+	The tests are stored with the railobuild project, so you can change the
+	the version of Railo you are testing with, without having to commit the
+	tests to that branch.  We should probably create a separate repository for
+	all tests, and pull from that.  We should probably categorize things like
+	web/server admin tests by Railo version, so we can not run the new admin 
+	features on the old admin versions.
+	
+	tests/
+		/jira  (jira tests)
+		/jmeter (jmeter tests)
+		/results (generic test results dir)
+		/results/jmeter (jmeter results)
+
+Build and run the jira tests:
+ ./railobuild build.and.test
+
+Run the jira tests:
+ ./railobuild test
+
+LOAD TESTS:  JMETER
+
+Downlaod and install JMeter (defaults to ./build/jmeter-{version}) by entering: 
+ ./railobuild jmeter.install
+
+Build and run the jmeter tests:
+ ./railobuild build.and.loadtest
+
+Run the jmeter tests (this will run jmeter.run and jmeter.report):
+ ./railobuild loadtest
+
+Run the jmeter tests alone (no report generation):
+ ./railobuild jmeter.run
+
+Run the jmeter report generation (no tests are run):
+ ./railobuild jmeter.report
+
+Clean the jmeter test results and reports:
+ ./railobuild jmeter.clean
+
+To run the test server by hand in the foreground (does not background):
+ ./railobuild server.start.fg
+
+Starting the test server by hand (goes to background):
+ ./railobuild server.start
+
+Stopping the test server by hand:
+ ./railobuild server.stop
+
+Editing JMeter tests:
+ ./railobuild server.start
+ ./build/jmeter-2.6.1/bin/jmeter.sh
+
+do yer editing or whatever, then
+ ./railobuild server.stop
+
+PACKAGING
+
+WAR
+	A WAR file is generated as part of the standard build, as is the railo.jar,
+	and core.rc file. 
+	

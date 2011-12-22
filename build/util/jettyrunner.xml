@@ -1,0 +1,133 @@
+<project name="runwar" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+	<dirname property="runwar.basedir" file="${ant.file.runwar}" />
+
+	<macrodef name="runwar.initprops">
+		<sequential>
+			<dirname property="runwar.basedir" file="${ant.file.runwar}" />
+			<property name="war.name" value="runwar" />
+			<property name="build.sysclasspath" value="last" />
+			
+			<property name="server.deploy.dir" value="${war.target.dir}/../"/>
+			<property name="server.log.dir" value="${log.dir}/"/>
+			<property name="server.port" value="8088"/>
+			<property name="server.port.http" value="${server.port}"/>
+			<property name="server.port.ajp" value="8009"/>
+			<property name="server.url" value="http://127.0.0.1:${server.port.http}${war.contextpath}/index.cfm"/>
+			<property name="server.memory.max" value="256M"/>
+			<property name="server.host.max" value="256M"/>
+			<property name="server.jvm.args" value="" />
+
+			<property name="runwar.war.path" location="${war.target.dir}" />
+			<property name="runwar.war.contextpath" value="${war.contextpath}" />
+			<property name="runwar.port" value="${server.port.http}" />
+			<property name="runwar.host" value="${server.host}" />
+			<property name="runwar.maxmemory" value="${server.memory.max}" />
+			<property name="runwar.log.dir" location="${server.log.dir}/" />
+			<property name="runwar.stop.socket" value="8079" />
+			<property name="runwar.cfml.dirlist" value="${tests.dir}/../" />
+			<property name="open.url" value="${server.url}" />
+			<fix-url-slashes property="open.url" />
+			<property name="runner.temp.dir" value="${temp.dir}/runner" />
+			<property name="runner.jar" value="${runner.temp.dir}/${war.name}.jar" />
+			<path id="runwar.lib.path">
+				<fileset dir="${cfdistro.basedir}/lib">
+					<include name="*.jar" />
+				</fileset>
+				<fileset dir="${war.target.dir}/WEB-INF/lib">
+					<include name="*.jar" />
+				</fileset>
+			</path>
+		</sequential>
+	</macrodef>
+	<runwar.initprops />
+
+	<target name="server.start.fg" description="starts jetty-runner server in foreground">
+		<runwar.initprops />
+		<antcontrib:var name="background" value="false" />
+		<antcontrib:runtarget target="server.start" />
+	</target>
+
+	<target name="server.start" description="starts jetty-runner server">
+		<runwar.initprops />
+		<property name="background" value="true" />
+		<property name="runwar.background" value="${background}" />
+		<property name="runwar.openbrowser" value="false" />
+		<property name="runwar.keeprequestlog" value="false" />
+		<echo message="starting jetty-runner (${server.jvm.args})"/>
+		<sequential>
+			<path id="cfdistro.libs.path">
+				<fileset dir="${cfdistro.basedir}/lib">
+					<include name="*.jar" />
+				</fileset>
+			</path>
+			<java classname="runwar.Start" classpathref="cfdistro.libs.path" fork="true" spawn="false" maxmemory="${runwar.maxmemory}" failonerror="true">
+				<jvmarg line="${server.jvm.args}"/>
+				<arg value="${runwar.war.path}" />
+				<arg value="${runwar.war.contextpath}" />
+				<arg value="${runwar.host}" />
+				<arg value="${runwar.port}" />
+				<arg value="${runwar.stop.socket}" />
+				<arg value="${runwar.log.dir}" />
+				<arg value="${runwar.cfml.dirlist}" />
+				<arg value="${background}" />
+				<arg value="${runwar.keeprequestlog}" />
+				<arg value="${runwar.openbrowser}" />
+				<!--
+				<jvmarg value="-Djetty.logs=${runwar.log.dir}" />
+				<jvmarg value="-Dorg.eclipse.jetty.util.log.DEBUG=true" />
+				<jvmarg value="-Xdebug"/>
+				-->
+			</java>
+			<echo message="waiting for jetty-runner"/>
+			<sleep seconds="7" />
+			<waitfor maxwait="51" maxwaitunit="second" checkevery="3" checkeveryunit="second" timeoutproperty="toolong">
+				<and>
+					<socket server="${runwar.host}" port="${runwar.port}" />
+					<!--
+					<http url="http://127.0.0.1:${runwar.port}/" />
+					<http url="http://127.0.0.1:${runwar.port}/${runwar.war.contextpath}build.cfc" />
+					-->
+				</and>
+			</waitfor>
+			<antcontrib:runtarget target="if.toolong.echo" />
+			<echo message="stop server by typing: ./railobuild server.stop"/>
+		</sequential>
+	</target>
+	
+	<target name="server.stop" description="stops jetty-runner server">
+		<runwar.initprops />
+		<echo message="stopping jetty-runner (using stop listener on port ${runwar.stop.socket})."/>
+		<antcontrib:trycatch property="foo" reference="bar">
+			<try>
+			<java classname="runwar.Stop" classpathref="runwar.lib.path">
+				<arg value="${runwar.stop.socket}" />
+			</java>
+			</try>
+			<catch>
+				<fail message="Could not stop the server. Might not have been running." />
+			</catch>
+		</antcontrib:trycatch>			
+		<echo message="peace out bro!"/>
+	</target>
+
+	<target name="if.toolong.echo" if="toolong">
+		<echo message="Seems like the server took longer than 51 seconds to start, the log might follow this message to see why" />
+		<loadfile property="errlog"
+		      srcFile="${runwar.log.dir}/server.log.txt" failonerror="false"/>
+		<echo message="${errlog}" />
+	</target>
+
+	<target name="server.openUrl" description="launches a browser pointing at ${open.url}">
+		<open-url url="${open.url}" />			
+	</target>
+
+	<macrodef name="open-url">
+		<attribute name="url" />
+		<sequential>
+			<java classname="runwar.BrowserOpener" classpathref="runwar.lib.path" failonerror="true" fork="true">
+				<arg value="@{url}" />
+			</java>			
+		</sequential>
+	</macrodef>	
+</project>

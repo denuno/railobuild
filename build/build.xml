@@ -1,0 +1,318 @@
+<project name="railobuild" default="build" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+	<antcontrib:if>
+		<equals arg1="${build.java.home}" arg2="$${build.java.home}" />
+		<then/>
+		<else>
+			<antcontrib:var name="java.home" value="${build.java.home}"/>
+			<antcontrib:var name="JAVA_HOME" value="${build.java.home}"/>
+		</else>
+	</antcontrib:if>
+
+	<tstamp>
+		<format property="todays.date" pattern="yyyy/MM/dd hh:mm:ss"/>
+		<format property="todays.tstamp" pattern="MMddhhmm"/>
+	</tstamp>
+	<propertyfile file="${basedir}/buildinfo.properties" comment="Build Information">
+		<entry key="build.date" type="date" pattern="MM-dd-yyyy HH:mm:ss" value="now" />
+		<entry key="build.time" type="date" pattern="kk:mm:ss" value="now" />
+		<entry key="build.timestamp" type="date" pattern="MM-dd-yyyy' at 'HH:mm:ss" value="now" />
+		<entry key="build.lastcommithash" default="" />
+	</propertyfile>
+	<property file="${user.home}/railobuild.buildinfo.properties" />
+	<property file="${basedir}/buildinfo.properties" />
+<!--
+	<property name="jdk5.home" value="/System/Library/Frameworks/JavaVM.framework/Versions/1.5.0/Home/" />
+-->
+	<loadproperties srcfile="build.properties"/>
+	<echo message="${todays.date}"/>
+
+	<property name="railo.build.bump" value="" description="one of [major|minor|build|revision] or empty to not bump number." />
+	<property name="railo.build.level" value="os"/>
+	<property name="railo.build.state" value="source-build"/>
+	<property name="railo.build.name" value="awesomecoffee"/>
+	<property name="railo.javac.compiler" value="1.6"/>
+	<property name="railobuild.dist.dir" value="../dist"/>
+
+	<!-- don't change the password or charset! -->
+	<property name="railo.password" value="testtest"/>
+	<property name="server.charset" value="iso-8859-1" />
+	<property name="server.host" value="127.0.0.1" />
+	<property name="server.port.http" value="8181" />
+	<property name="server.url" value="http://${server.host}:${server.port.http}/tests/jira/index.cfm" />
+
+	<!-- railo loader build script -->
+	<import file="build-loader.xml"/>
+	<import file="build-core.xml"/>
+	<import file="build-railo.xml"/>
+	<import file="build-test.xml"/>
+	<import file="build-installer.xml"/>
+
+	<!-- import all the macrodefs and whatnot -->
+	<import file="util/zbuild.xml"/>
+
+
+        
+   	<target name="clean">
+		<delete dir="${railobuild.dist.dir}"/>
+		<delete dir="${temp.dir}"/>
+	</target>
+	
+	<target name="init">
+		<antcontrib:if>
+			<available file="${src.dir}/railo-java/" type="dir"/>
+			<then/>
+			<else>
+				<antcontrib:runtarget target="project.checkout"/>
+			</else>
+		</antcontrib:if>
+	</target>
+	
+	<target name="build" >
+		<antcontrib:if>
+			<equals arg1="${commit}" arg2="$${commit}" />
+			<then>
+				<antcontrib:if>
+					<equals arg1="${branch}" arg2="$${branch}" />
+					<then>
+						<antcontrib:runtarget target="build.main"/>
+					</then>
+					<else>
+						<build-branch />
+					</else>
+				</antcontrib:if>
+			</then>
+			<else>
+				<build-commit />
+			</else>
+		</antcontrib:if>
+	</target>
+
+	<target name="build.main" depends="init">
+		<antcontrib:runtarget target="scminfo"/>
+		<mkdir dir="${railobuild.dist.dir}"/>
+		<echoproperties destfile="${temp.dir}/railo.properties" prefix="railo" />
+		<antcontrib:propertyregex override="yes" property="railo.build.version.major" input="${railo.build.version.long}" 
+			regexp="(\d).*" select="\1" />
+		<checkJavaVersion />
+		<sequential>
+				<delete file="${src.dir}/railo-cfml/railo-admin/railo-context.ra"/>
+				<delete file="${src.dir}/railo-java/railo-libs/railo-loader.jar"/>
+						<antcontrib:runtarget target="RailoMaster.init" />
+
+				    	<echo>*************************************</echo>
+				    	<echo>***** Building railo-loader.jar *****</echo>
+				    	<echo>*************************************</echo>
+						<antcontrib:runtarget target="RailoLoader.install" />
+						
+				    	<echo>*************************************</echo>
+				        <echo>***** Building Railo core.rc ********</echo>        
+				    	<echo>*************************************</echo>
+						<antcontrib:runtarget target="RailoCore.install" />
+							
+						<!-- at this point we have a successful build of the .rc file maybe -->
+						<antcontrib:if>
+							<not><available file="${src.dir}/railo-java/railo-core/dist/${railo.build.version.long}.rc"/></not> 
+							<then><fail message="Something went south during the core build.  Can't go on.  We're dooooomed."/></then>
+						</antcontrib:if>
+						<antcontrib:if>
+							<not><available file="${src.dir}/railo-cfml/railo-admin/railo-context.ra"/></not> 
+							<then>
+						    	<loadfile property="railo.compile_message" srcFile="${src.dir}/railo-java/railo-core/generate.html" />
+								<fail message="Something went south during the admin context build.  Can't go on.  Game over man, game over!: ${railo.compile_message}"/>
+							</then>
+						</antcontrib:if>
+						<echo>Moving ${railo.build.version.long}.rc to: ${railobuild.dist.dir}</echo>
+						
+						<!-- <copy file="${src.dir}/railo-cfml/railo-admin/railo-context.ra" todir="${railobuild.dist.dir}" /> -->
+						<copy file="${src.dir}/railo-java/railo-core/dist/${railo.build.version.long}.rc" tofile="${src.dir}/railo-java/railo-core/dist/core.rc" />
+						<move file="${src.dir}/railo-java/railo-core/dist/${railo.build.version.long}.rc" todir="${railobuild.dist.dir}" />
+				    	<echo>*************************************</echo>
+				        <echo>***** Building railo.jar ************</echo>
+				    	<echo>*************************************</echo>
+						<antcontrib:runtarget target="Railo.package" />
+						<copy file="${src.dir}/railo-java/railo/dist/railo.jar" tofile="${railobuild.dist.dir}/railo-${railo.build.version.long}.jar" />
+
+						<echo>*************************************</echo>
+				        <echo>***** Building railo.war ************</echo>
+				    	<echo>*************************************</echo>
+						<delete dir="${railobuild.dist.dir}/railo.war"/>
+						<mkdir dir="${railobuild.dist.dir}/railo.war/WEB-INF/lib"/>
+						<copy todir="${railobuild.dist.dir}/railo.war">
+							<fileset dir="${basedir}/resource/railo-war-template" />
+						</copy>
+						<copy todir="${railobuild.dist.dir}/railo.war/WEB-INF/lib">
+							<fileset dir="${src.dir}/railo-java/libs" excludes="railo-loader.jar" />
+						</copy>
+						<copy file="${railobuild.dist.dir}/railo-${railo.build.version.long}.jar" tofile="${railobuild.dist.dir}/railo.war/WEB-INF/lib/railo.jar" />
+						<!-- compress war -->
+						<mkdir dir="${railobuild.dist.dir}/compressed" />
+						<jar jarfile="${railobuild.dist.dir}/compressed/railo-${railo.build.version.long}.war" basedir="${railobuild.dist.dir}/railo.war" />
+						<delete dir="${railobuild.dist.dir}/railo.war" />
+						<move file="${railobuild.dist.dir}/compressed/railo-${railo.build.version.long}.war" todir="${railobuild.dist.dir}" />
+						<delete dir="${railobuild.dist.dir}/compressed" />
+						<echo>*** WAR file exported to ${railobuild.dist.dir}/railo-${railo.build.version.long}.war ***</echo>
+
+			<copy file="${railobuild.dist.dir}/${railo.build.version.long}.rc" tofile="${railobuild.dist.dir}/${railo.build.version.long}.${build.lastcommithash}.rc"  failonerror="false"/>
+			<move file="${railobuild.dist.dir}/commit.log" tofile="${railobuild.dist.dir}/commit.${build.lastcommithash}.log"  failonerror="false"/>
+			<propertyfile file="${basedir}/buildinfo.properties" comment="Build Information">
+				<entry key="build.lastcommithash" value="${build.commithash}" />
+			</propertyfile>
+			<antcontrib:if>
+				<or>
+				<equals arg1="${build.lastcommithash}" arg2="" />
+				<equals arg1="${build.lastcommithash}" arg2="${build.commithash}" />
+				</or>
+				<then>
+					<git command="log" dir="${src.dir}"><args><arg value="-n"/><arg value="10"/></args></git>
+					<echo file="${railobuild.dist.dir}/commit.log">No prior builds.  Last 10 commits: 
+${git.results}</echo>
+				</then>
+				<else>
+					<git command="log" dir="${src.dir}"><args><arg value="${build.lastcommithash}..${build.commithash}"/><arg value="-n"/><arg value="50"/></args></git>
+					<echo file="${railobuild.dist.dir}/commit.log">Commits since last build 
+${build.lastcommithash}..${build.commithash}:
+${git.results}</echo>
+				</else>
+			</antcontrib:if>
+
+		</sequential>
+	</target>
+	
+	<target name="set.build.info">
+		<property file="${src.dir}/railo-java/railo-core/src/railo/runtime/Info.ini" prefix="railoini"/>
+		<property name="railo.build.name-explanation" value="${railoini.name-explanation}"/>
+		<version-splitter property="railo.build.version" version="${railoini.number}" bump="${railo.build.bump}"/>
+		<antcontrib:inifile source="${src.dir}/railo-java/railo-core/src/railo/runtime/Info.ini" 
+			dest="${src.dir}/railo-java/railo-core/src/railo/runtime/Info.ini">
+			   <set section="version" property="release-date" value="${todays.date}" />
+			   <set section="version" property="number" value="${railo.build.version.long}" />
+			   <set section="version" property="level" value="${railo.build.level}" />
+			   <set section="version" property="state" value="${railo.build.state}" />
+			   <set section="version" property="name" value="Nightly (${build.commithash})" />
+			   <set section="version" property="name-explanation" value="https://github.com/denuno/railo/commit/${build.commithash}" />
+		</antcontrib:inifile>
+	</target>
+	
+	<target name="scminfo">
+		<git-currentbranch dir="${src.dir}"/>
+		<git command="log" dir="${src.dir}"><args><arg value="-n"/><arg value="1"/></args></git>
+		<antcontrib:propertyregex override="yes" property="commithash" input="${git.results}" regexp=".*commit\s(.\w+).*" select="\1" />
+		<antcontrib:propertyregex override="yes" property="commitdate" input="${git.results}" regexp="(?ism).*Date:\s(.*\d+)" select="\1eee" />
+		<antcontrib:propertyregex override="yes" property="commitmessage" input="${git.results}" regexp="(?im).*Date:\s(.*\d+)?(.*)+" select="rrr\2" />
+		<echo message="${commithash}"/>
+		<echo message="${commitmessage}"/>
+		<echo message="${commitdate}"/>
+		<property name="build.commithash" value="${commithash}" />
+		<property name="build.lastcommithash" value="${commithash}" />
+		<antcontrib:runtarget target="set.build.info"/>
+    	<echo>*************************************</echo>
+    	<echo>***** Building railo ${railo.build.version.long} (${commithash}) *****</echo>
+    	<echo>*************************************</echo>
+	</target>
+	
+	
+    <target name="RailoMaster.init" description="Cleans all three sub projects.">
+    	<echo>***** Start Railo build process. *****</echo>
+    	<ant dir="${railo.master.loader.dir}" target="clean" inheritall="false" />
+    	<ant dir="${railo.master.core.dir}" target="clean" inheritall="false" />
+    	<ant dir="${railo.master.railo.dir}" target="clean" inheritall="false" />
+    </target>	
+    
+    <macrodef name="git-fetch-from-remote">
+        <sequential>
+			<!--  get branches -->
+			<git command="fetch" dir="${src.dir}">
+				<args>
+					<arg value="origin" />
+					<arg value="+refs/heads/*:refs/remotes/origin/*" />
+				</args>
+			</git>
+			<!--  get tags -->
+			<git command="fetch" dir="${src.dir}">
+				<args>
+					<arg value="origin" />
+					<arg value="+refs/tags/*:refs/remotes/origin/*" />
+				</args>
+			</git>
+        </sequential>
+    </macrodef>
+    
+    <macrodef name="build-branch">
+	    <sequential>
+			<input addproperty="branch" message="branch [ 3.2 | 3.3 | develop | [tag] ] :"/>
+			<antcontrib:var name="ext.railo.war.version" value="3.2.1.000" />
+			<git-fetch-from-remote />
+			<!-- use the system git as jgit has trouble with conflicts -->
+			<git command="checkout" dir="${src.dir}" use-jgit="false">
+				<args>
+					<arg value="--force" />
+					<arg value="origin/${branch}" />
+				</args>
+			</git>
+			<antcontrib:runtarget target="build.main"/>
+	    </sequential>
+    </macrodef>
+    
+    <macrodef name="build-commit">
+	    <sequential>
+			<input addproperty="commit" message="commit:"/>
+			<git-fetch-from-remote />
+			<!-- use the system git as jgit has trouble with conflicts -->
+			<git command="checkout" dir="${src.dir}" use-jgit="false">
+				<args>
+					<arg value="--force" />
+					<arg value="${commit}" />
+				</args>
+			</git>
+			<antcontrib:runtarget target="build.main"/>
+	    </sequential>
+    </macrodef>
+    
+    <macrodef name="checkJavaVersion">
+    	<sequential>
+		<property name="railo.javac.compiler" value="1.6" />
+		<antcontrib:propertyregex override="yes" property="__major" input="${railo.build.version.long}" 
+			regexp="(\d).*" select="\1" 
+		/>
+		<antcontrib:propertyregex override="yes" property="__minor" input="${railo.build.version.long}" 
+			regexp="\d\.(\d).*" select="\1" 
+		/>
+		<antcontrib:if>
+				<equals arg1="__major" arg2="4" />
+			<then>
+				<antcontrib:var name="railo.javac.compiler" value="1.6" />
+			</then>
+		</antcontrib:if>
+		<antcontrib:if>
+			<and>
+				<equals arg1="${__major}" arg2="3" />
+				<or>
+				<equals arg1="${__minor}" arg2="1" />
+				<equals arg1="${__minor}" arg2="2" />
+				</or>
+			</and>
+			<then>
+				<antcontrib:var name="railo.javac.compiler" value="1.5" />
+				<!-- 
+				<antcontrib:runtarget target="get.jre5.location" />
+				<antcontrib:var name="ecj.javacmd" value='${jre5.home}bin/java' />
+				 -->
+			</then>
+		</antcontrib:if>
+	    <!-- check for java version and fail build if not the correct version --> 
+	    <echo message="Java Version: ${java.version}"/> 
+	    <echo message="Java home: ${java.home}"/> 
+	    <fail message="Unsupported Java version: ${java.version}. Make sure that the version of the Java compiler is ${railo.javac.compiler} (${railo.javac.compiler}) or greater. (JAVA_HOME = ${java.home})"> 
+	        <condition> 
+	            <not> 
+	                <or> 
+	                    <contains string="${java.version}" substring="${railo.javac.compiler}" casesensitive="false" /> 
+	                </or> 
+	            </not> 
+	        </condition> 
+	    </fail> 
+       	</sequential>
+    </macrodef>
+	
+</project>

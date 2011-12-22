@@ -1,0 +1,98 @@
+<project name="jmeter" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+	<property name="jmeter.version" value="2.5.1" />
+	<property name="ext.jmeter.dir" location="${ext.dir}/jmeter/${jmeter.version}" />
+	<property name="jmeter.dir" location="./jmeter-${jmeter.version}" />
+	<property name="jmeter.tests.dir" location="${src.dir}/../tests/jmeter/" />
+	<property name="jmeter.tests.results.dir" location="${jmeter.tests.dir}/../results/jmeter/" />
+	<property name="ext.jmeter.zip.uri" value="http://www.poolsaboveground.com/apache/jmeter/binaries/jakarta-jmeter-${jmeter.version}.zip" />
+	
+	<property name="ext.jmeter.zip" location="${ext.jmeter.dir}/jmeter-${jmeter.version}.zip" />
+	<property name="jmeter.save.errors" value="true" />
+	
+	<condition property="jmeter.show-data" value="y">
+		<equals arg1="${jmeter.save.errors}" arg2="true"/>
+	</condition>
+	<property name="jmeter.show-data" value="n" />
+	
+	<echo message="Storing errors: ${jmeter.save.errors} (${jmeter.show-data})" />
+	
+	<target name="jmeter.install">
+		<mkdir dir="${ext.jmeter.dir}"/>
+		<sequential>
+		<antcontrib:if>
+			<available file="${ext.jmeter.zip}" />
+			<then/>
+			<else>
+				<get src="${ext.jmeter.zip.uri}" dest="${ext.jmeter.zip}" verbose="true" ignoreerrors="false" />
+			</else>
+		</antcontrib:if>
+		<unzip src="${ext.jmeter.zip}"
+		       dest="${jmeter.dir}">
+			<regexpmapper from="jmeter-${jmeter.version}/(.*)$" to="\1"/>
+		</unzip>
+		<chmod dir="${jmeter.dir}/bin" perm="ugo+rx" 
+		       includes="**/*.sh"/>
+		</sequential>
+	</target>
+	
+	<target name="jmeter.uninstall">
+		<delete dir="${ext.jmeter.dir}"/>
+		<delete dir="${jmeter.dir}"/>
+	</target>
+
+
+	<target name="jmeter.clean">
+		<mkdir dir="${ext.jmeter.dir}"/>
+		<delete dir="${jmeter.tests.results.dir}/" />
+		<mkdir dir="${jmeter.tests.results.dir}/" />
+	</target>
+
+	
+	<!-- Use xalan copy from JMeter lib directory to ensure consistent processing with Java 1.4+ -->
+    <path id="xslt.classpath">
+        <fileset dir="${jmeter.dir}/lib" includes="xalan*.jar"/>
+        <fileset dir="${jmeter.dir}/lib" includes="serializer*.jar"/>
+    </path>
+
+	<target name="jmeter.run.and.report" depends="jmeter.run, jmeter.report">
+	</target>
+
+	<target name="jmeter.run">
+		<taskdef name="jmeter" classname="org.programmerplanet.ant.taskdefs.jmeter.JMeterTask"/>
+		<jmeter jmeterhome="${jmeter.dir}" resultlogdir="${jmeter.tests.results.dir}" 
+			failureProperty="jmeter.fail" jmeterlogfile="${jmeter.tests.results.dir}/jmeter.log">
+		    <property name="jmeter.save.saveservice.assertion_results" value="all"/>
+		    <property name="jmeter.save.saveservice.output_format" value="xml"/>
+		    <property name="jmeter.save.saveservice.base_prefix" value="~/"/>
+			<property name="jmeter.save.saveservice.bytes" value="true"/>
+			<property name="jmeter.save.saveservice.response_data.on_error" value="${jmeter.save.errors}"/>
+		    <!-- 
+		    reference: http://www.programmerplanet.org/pages/projects/jmeter-ant-task.php
+			<property name="jmeter.save.saveservice.response_message" value="${jmeter.save.errors}"/>
+		    <property name="request.threads" value="1"/>
+			<property name="request.loop" value="10"/>
+			<property name="jmeter.save.saveservice.response_data" value="false"/>
+			<jvmarg value="-Xincgc"/>
+			<jvmarg value="-Xmx128m"/>
+			<jvmarg value="-Dproperty=value"/>
+		     -->
+			<testplans dir="${jmeter.tests.dir}" includes="*.jmx"/>
+		</jmeter>
+	</target>
+
+	<target name="jmeter.report">
+		<xslt classpathref="xslt.classpath" force="true"
+		    basedir="${jmeter.tests.results.dir}"
+			includes="**/*.jtl"
+		    destdir="${jmeter.tests.results.dir}"
+		    style="${jmeter.dir}/extras/jmeter-results-detail-report_21.xsl">			
+			<param name="showData" expression="${jmeter.show-data}"/>
+		</xslt>
+		<copy todir="${jmeter.tests.results.dir}">
+			<fileset dir="${jmeter.dir}/extras/" includes="expand.jpg,collapse.jpg" />
+		</copy>
+	</target>
+
+	
+</project>

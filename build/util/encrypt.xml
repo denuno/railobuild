@@ -1,0 +1,32 @@
+<project name="cfmlengcrypt" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+	<dirname property="cfmlengcrypt.basedir" file="${ant.file.cfmlengcrypt}" />
+
+	<path id="cfmlengcrypt.lib.path">
+		<fileset dir="${cfmlengcrypt.basedir}/lib">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<target name="railo.encrypt">
+		<antcontrib:var name="railo.password.encrypted" unset="true" />		
+		<cfmlengcrypt engine="railo" plaintext="${railo.password.plaintext}" property="railo.password.encrypted" />
+		<antcontrib:var name="dsn.password.plaintext" unset="true" />		
+	</target>
+
+	<macrodef name="cfmlengcrypt">
+		<attribute name="engine" default="railo" />
+		<attribute name="plaintext" />
+		<attribute name="property" />
+		<sequential>
+			<antcontrib:var name="@{property}" unset="true" />
+			<java classname="cfmlengcrypt.Main" fork="true" classpathref="cfmlengcrypt.lib.path" outputproperty="@{property}">
+				<arg value="railo" />
+				<arg value="@{plaintext}" />
+			</java>
+			<echo message="@{engine} encrypted: @{plaintext} = ${@{property}} > $${@{property}}"/>
+		</sequential>
+	</macrodef>
+
+	
+</project>

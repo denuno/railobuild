@@ -1,0 +1,43 @@
+#! /bin/bash
+reldir=`dirname $0`
+cd $reldir/build
+export ANT_HOME=util/ant
+if [ -z "$1" ]; then
+echo "railobuild control script"
+OPTIONS="start stop help list-targets update exit"
+select opt in $OPTIONS; do
+if [ "$opt" = "start" ]; then
+	/bin/sh util/ant/bin/ant -f build.xml build.start.launch
+	exit
+elif [ "$opt" = "stop" ]; then
+	/bin/sh util/ant/bin/ant -f build.xml server.stop
+	exit
+elif [ "$opt" = "help" ]; then
+	echo "usage (skips this prompt): railobuild.sh [start|stop|{target}]"
+elif [ "$opt" = "list-targets" ]; then
+	/bin/sh util/ant/bin/ant -f build.xml help
+elif [ "$opt" = "update" ]; then
+	/bin/sh util/ant/bin/ant -f build.xml project.update
+elif [ "$opt" = "exit" ]; then
+	exit
+else
+	#clear
+	echo bad option
+fi
+done
+fi
+target=$1
+parameters=""
+shift
+for var in "$@"
+do
+    parameters="$parameters -D$var"
+    if [ ${var:0:15} = "build.java.home" ]; then
+    JAVA_HOME=${var:16}
+    echo JAVA HOME OVERRIDE! $JAVA_HOME
+    export JAVA_HOME
+    fi
+done
+/bin/sh util/ant/bin/ant -f build.xml $target -Dbasedir=. $parameters
+	
+			
