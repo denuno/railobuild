@@ -294,7 +294,7 @@ ${git.results}</echo>
 	    <!-- check for java version and fail build if not the correct version --> 
 	    <echo message="Java Version: ${java.version}"/> 
 	    <echo message="Java home: ${java.home}"/> 
-	    <fail message="Unsupported Java version: ${java.version}. Make sure that the version of the Java compiler is ${railo.javac.compiler} (${railo.javac.compiler}) or greater. (JAVA_HOME = ${java.home})"> 
+	    <fail message="Unsupported Java version: ${java.version}. Make sure that the JRE version is ${railo.javac.compiler} by setting JAVA_HOME to the correct JRE. (JAVA_HOME = ${java.home})"> 
 	        <condition> 
 	            <not> 
 	                <or> 

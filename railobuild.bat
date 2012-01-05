@@ -47,11 +47,10 @@ goto MENU
 :buildRailo
 cls
 call build\util\ant\bin\ant.bat -f build/build.xml build
-echo to stop the server, run this again or run: railobuild.bat stop
 goto end
 ::
 :buildAndTest
-call build\util\ant\bin\ant.bat -f build/build.xml server.stop
+call build\util\ant\bin\ant.bat -f build/build.xml build.and.test
 goto end
 ::
 :listTargets
