@@ -4,16 +4,16 @@ cd $reldir/build
 export ANT_HOME=util/ant
 if [ -z "$1" ]; then
 echo "railobuild control script"
-OPTIONS="start stop help list-targets update exit"
+OPTIONS="build build.and.test help list-targets update exit"
 select opt in $OPTIONS; do
-if [ "$opt" = "start" ]; then
-	/bin/sh util/ant/bin/ant -f build.xml build.start.launch
+if [ "$opt" = "build" ]; then
+	/bin/sh util/ant/bin/ant -f build.xml build
 	exit
-elif [ "$opt" = "stop" ]; then
-	/bin/sh util/ant/bin/ant -f build.xml server.stop
+elif [ "$opt" = "build.and.test" ]; then
+	/bin/sh util/ant/bin/ant -f build.xml build.and.test
 	exit
 elif [ "$opt" = "help" ]; then
-	echo "usage (skips this prompt): railobuild.sh [start|stop|{target}]"
+	echo "usage (skips this prompt): railobuild [build|test|{target}]"
 elif [ "$opt" = "list-targets" ]; then
 	/bin/sh util/ant/bin/ant -f build.xml help
 elif [ "$opt" = "update" ]; then
