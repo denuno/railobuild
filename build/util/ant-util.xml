@@ -182,9 +182,8 @@
 			<path id="javac-ecj.compile.classpath" path="rt.jar:@{classpath}" />
 			<echo message="Compiling @{srcdir} (compliance:@{compliance}) to @{destdir}" />
 			<!-- we use the temp file because the cp gets too long for windows sometimes -->
-			<tempfile property="temp.file" deleteonexit="true" prefix="ecj-classpath-" />
-			<concat destfile="${temp.file}">-classpath
-				${toString:javac-ecj.compile.classpath}</concat>
+			<echo file="ecj-classpath.txt">-classpath
+				"${toString:javac-ecj.compile.classpath}"</echo>
 			<java jar="${cfdistro.basedir}/lib/ecj-3.6.jar" fork="@{fork}"
 				classpathref="build.lib.path" maxmemory="@{maxmemory}" failonerror="true">
 				<arg value="-@{compliance}" />
@@ -197,10 +196,10 @@
 				<arg value="@{target}" />
 				<arg value="-source" />
 				<arg value="@{source}" />
-				<arg line="@${temp.file}" />
+				<arg line="@ecj-classpath.txt" />
 				<arg value="@{srcdir}" />
 			</java>
-			<delete file="${temp.file}" />
+			<delete file="ecj-classpath.txt" />
 		</sequential>
 	</macrodef>
 

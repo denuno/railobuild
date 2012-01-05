@@ -68,7 +68,7 @@
 		</antcontrib:if>
 	</target>
 	
-	<target name="build" >
+	<target name="build" description="Build Railo from source, downloading from git if needed">
 		<antcontrib:if>
 			<equals arg1="${commit}" arg2="$${commit}" />
 			<then>
@@ -98,7 +98,6 @@
 		<sequential>
 				<delete file="${src.dir}/railo-cfml/railo-admin/railo-context.ra"/>
 				<delete file="${src.dir}/railo-java/railo-libs/railo-loader.jar"/>
-						<antcontrib:runtarget target="RailoMaster.init" />
 
 				    	<echo>*************************************</echo>
 				    	<echo>***** Building railo-loader.jar *****</echo>
@@ -210,14 +209,6 @@ ${git.results}</echo>
     	<echo>***** Building railo ${railo.build.version.long} (${commithash}) *****</echo>
     	<echo>*************************************</echo>
 	</target>
-	
-	
-    <target name="RailoMaster.init" description="Cleans all three sub projects.">
-    	<echo>***** Start Railo build process. *****</echo>
-    	<ant dir="${railo.master.loader.dir}" target="clean" inheritall="false" />
-    	<ant dir="${railo.master.core.dir}" target="clean" inheritall="false" />
-    	<ant dir="${railo.master.railo.dir}" target="clean" inheritall="false" />
-    </target>	
     
     <macrodef name="git-fetch-from-remote">
         <sequential>

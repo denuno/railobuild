@@ -17,10 +17,10 @@ goto end
 cls
 echo.
 echo       railobuild menu
-REM echo       usage: railobuild.bat [start|stop|{target}]
+REM echo       usage: railobuild.bat [build|{target}]
 echo.
-echo       1. Start server and open browser
-echo       2. Stop server
+echo       1. Build Railo
+echo       2. Build and Test
 echo       3. List available targets
 echo       4. Update project
 echo       5. Run Target
@@ -30,8 +30,8 @@ set choice=
 set /p choice=      Enter option 1, 2, 3, 4, 5 or 6 :
 echo.
 if not '%choice%'=='' set choice=%choice:~0,1%
-if '%choice%'=='1' goto startServer
-if '%choice%'=='2' goto stopServer
+if '%choice%'=='1' goto buildRailo
+if '%choice%'=='2' goto buildAndTest
 if '%choice%'=='3' goto listTargets
 if '%choice%'=='4' goto updateProject
 if '%choice%'=='5' goto runTarget
@@ -44,13 +44,13 @@ echo.
 pause
 goto MENU
 ::
-:startServer
+:buildRailo
 cls
-call build\util\ant\bin\ant.bat -f build/build.xml build.start.launch
+call build\util\ant\bin\ant.bat -f build/build.xml build
 echo to stop the server, run this again or run: railobuild.bat stop
 goto end
 ::
-:stopServer
+:buildAndTest
 call build\util\ant\bin\ant.bat -f build/build.xml server.stop
 goto end
 ::
