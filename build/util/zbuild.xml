@@ -897,8 +897,7 @@ a tiny 2m jar but getPageContext() throws errors!!
 				<antcontrib:var name="exists.customtags.xml" value="true" />
 			</then>
 			<else>
-				<antcontrib:var name="exists.customtags.xml" value="true" />
-				<available file="${basedir}/customtags.xml" type="file" property="${customtags.file}" />
+				<available file="${basedir}/customtags.xml" type="file" property="exists.customtags.xml" />
 			</else>
 		</antcontrib:if>
 	</else>

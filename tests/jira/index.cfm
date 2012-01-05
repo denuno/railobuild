@@ -3,7 +3,6 @@
 <cfset count=0>
 <cfset failedfiles = "">
 
-
 <cfloop query="dir">
 <cfif dir.type EQ "dir">
 	 <cfoutput><pre>------------ Test <a href="#dir.name#/index.cfm" target="_blank">#dir.name#</a> | view on <a href="https://issues.jboss.org/browse/RAILO-#dir.name#" target="_blank">Jira</a> -----------------</pre></cfoutput>
@@ -18,7 +17,6 @@
     <cfelse>
     	<cfdump var="no index.cfm in directory #dir.name#">
     </cfif>
-	<cfflush>
 </cfif>
 </cfloop>
 <cfif len(failedfiles) NEQ 0>
@@ -29,10 +27,5 @@ commenting out until we have all tests passing somehow.  AS3? Custom DBs?  Not e
 	    statusText = "Failed: #failedfiles#">
  --->
 </cfif>
-
-<cfheader
-    statusCode = "200"
-    statusText = "Success">
-
 
 
