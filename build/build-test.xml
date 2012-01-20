@@ -26,7 +26,7 @@
  -->
 		<antcontrib:trycatch reference="bar">
 		<try>
-			<get src="${server.url}" dest="${tests.dir}/results/jira.html" verbose="true" ignoreerrors="false" retries="0" maxtime="333" />
+			<get src="${server.url}" dest="${tests.dir}/results/jira.html" verbose="true" ignoreerrors="false" retries="0" maxtime="777" />
 		</try>
 		<catch>
 			<antcontrib:runtarget target="server.stop"/>

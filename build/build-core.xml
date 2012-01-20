@@ -108,6 +108,7 @@
 
 		<copy file="${src.dir}/railo-java/railo-core/src/resource/config/web.xml" 
 			tofile="${temp.dir}/railo.war/WEB-INF/railo/railo-web.xml.cfm" />
+			<echo message="${temp.dir}/railo.war/WEB-INF/railo/railo-web.xml.cfm"/>
 		<mapping physical="${src.dir}/railo-cfml" virtual="/railo-cfml"/>
 		<!-- 
 		<copy file="${basedir}/resource/railo-${railo.build.version.major}.jar" 

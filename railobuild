@@ -2,22 +2,23 @@
 reldir=`dirname $0`
 cd $reldir/build
 export ANT_HOME=util/ant
+ANTCMD="/bin/sh util/ant/bin/ant -nouserlib -f build.xml"
 if [ -z "$1" ]; then
 echo "railobuild control script"
 OPTIONS="build build.and.test help list-targets update exit"
 select opt in $OPTIONS; do
 if [ "$opt" = "build" ]; then
-	/bin/sh util/ant/bin/ant -f build.xml build
+	$ANTCMD build
 	exit
 elif [ "$opt" = "build.and.test" ]; then
-	/bin/sh util/ant/bin/ant -f build.xml build.and.test
+	$ANTCMD build.and.test
 	exit
 elif [ "$opt" = "help" ]; then
 	echo "usage (skips this prompt): railobuild [build|test|{target}]"
 elif [ "$opt" = "list-targets" ]; then
-	/bin/sh util/ant/bin/ant -f build.xml help
+	$ANTCMD help
 elif [ "$opt" = "update" ]; then
-	/bin/sh util/ant/bin/ant -f build.xml project.update
+	$ANTCMD project.update
 elif [ "$opt" = "exit" ]; then
 	exit
 else
@@ -38,6 +39,4 @@ do
     export JAVA_HOME
     fi
 done
-/bin/sh util/ant/bin/ant -f build.xml $target -Dbasedir=. $parameters
-	
-			
+$ANTCMD $target -Dbasedir=. $parameters

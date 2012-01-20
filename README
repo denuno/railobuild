@@ -19,20 +19,29 @@ Some notes about building:
 	
 	ex: ./railobuild build branch=3.2.1.006 build.java.home=/path/to/java_home
 	
-	Using the "build" or "commit" build options will do a *forced* checkout of
+	On Windows, if you set JAVA_HOME via command line, do not quote the path 
+	
+	ex: set JAVA_HOME=C:\Program Files\Java\jre6
+	
+	Using the "branch" or "commit" build options will do a *forced* checkout of
 	the corresponding sources.  If you have any changes, you sure as hell have
-	better committed them before running these "distructive" builds.
+	better committed them prior!  Only non-commited stuff will be dissapeared.
 	
 	Running a plain "build", without the branch or commit options, will only run
-	the build on the current sources.
+	the build on the current sources.  Non-committed stuff is safe.
 	
 	The sources are compiled with the Eclipse ECJ compiler, so no JDK is needed.
+	
+	You will see a commit log after each build.  If you update your sources, the
+	log will be of the changes since you last built the sources.  The last commit
+	hash will be stored in buildinfo.properties, which you can then use for CI
+	checks (i.e., if lastbuild.hash != current.hash, something changed).
 
 Build the default (3.3) branch
 
  ./railobuild build 
 
-Build the "develop" branch
+Build the "develop" branch (4.0)
 
  ./railobuild build branch=develop
  
@@ -61,14 +70,21 @@ Some notes on testing:
 		/jmeter (jmeter tests)
 		/results (generic test results dir)
 		/results/jmeter (jmeter results)
+		
+	Currently the Jira tests take about 3 mintues to run.  The webserver runs
+	for about another 2 mintues afterwards, but it will shut itself down when 
+	the threads spawned by the tests have exited.  Kill it if you're impatient.
 
 Build and run the jira tests:
  ./railobuild build.and.test
 
-Run the jira tests:
+Run the jira tests (starts server, runs tests, stops server):
  ./railobuild test
 
 LOAD TESTS:  JMETER
+
+	Currently there is only one JMeter test, which goes through the web admin a 
+	few times.
 
 Downlaod and install JMeter (defaults to ./build/jmeter-{version}) by entering: 
  ./railobuild jmeter.install
@@ -108,5 +124,4 @@ PACKAGING
 
 WAR
 	A WAR file is generated as part of the standard build, as is the railo.jar,
-	and core.rc file. 
-	
+	and core.rc file.

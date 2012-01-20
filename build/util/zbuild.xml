@@ -522,6 +522,10 @@ a tiny 2m jar but getPageContext() throws errors!!
 		<sequential>
 			<antcontrib:var name="some.mapping.exists" unset="true" />
 			<antcontrib:var name="mapping.exists" unset="true" />
+			<antcontrib:if>
+				<not><available file="${mappings.file}" /></not>
+				<then><echo file="${mappings.file}"><![CDATA[<mappings/>]]></echo></then>
+			</antcontrib:if>
 			<xmltask source="${mappings.file}" dest="${mappings.file}">
 				<xmlcatalog refId="commonDTDs" />
 				<copy path="/mappings/text()" property="some.mapping.exists" />
